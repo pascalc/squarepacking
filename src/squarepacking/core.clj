@@ -20,17 +20,18 @@
 ;; coordinates of its top-left and
 ;; bottom-right corners
 
-(defn make-square
-  [s]
-  (fresh [x1 x2 y1 y2]
-    ;; Domain of vars
-    (fd/in x1 y1 x2 y2 (fd/interval 0 MAX-COORD))
-    ;; Relationships between corners
-    (fd/eq 
-      (= (+ x1 s) x2)
-      (= (+ y1 s) y2))
-    ;; Returns coords as vars
+(defn make-square []
+  (let [[x1 y1 x2 y2] (repeatedly 4 lvar)]
     [[x1 y1] [x2 y2]]))
+
+(defn set-domain [[[x1 y1] [x2 y2]]]
+  (fd/in x1 y1 x2 y2 (fd/interval 0 MAX-COORD)))
+
+(defn constrain-coords
+  [size [x1 y1] [x2 y2]]
+  (fd/eq 
+    (= (+ x1 size) x2)
+    (= (+ y1 size) y2)))
 
 (defne not-overlapping-o
   [sq1 sq2]
@@ -42,15 +43,10 @@
       [(fd/<= x22 x11)]
       [(fd/<= y22 y11)])))
 
-(defn pack! [n s]
-  (run n [q]
-    (fresh [x1 x2 y1 y2]
-      ;; Domain of vars
-      (fd/in x1 y1 x2 y2 (fd/interval 0 MAX-COORD))
-      ;; Relationships between corners
-      (fd/eq 
-        (= (+ x1 s) x2)
-        (= (+ y1 s) y2))
-      ;; Returns coords as vars
-      (== q [[x1 y1] [x2 y2]]))))
+(defn pack! []
+  (let [squares (vec (repeatedly N make-square))]
+    (run 1 [q]
+      (everyg set-domain squares)
+      ;(constrain-coords squares)
+      (== q squares))))
 
