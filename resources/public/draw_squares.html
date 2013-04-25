@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <style>
+      body { 
+        background-color: lightblue; 
+        margin: auto;
+        width: 525px;
+      }
+      #canvas { 
+        margin-top: 30px;
+        background-color: white; 
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="525px" height="525px"></canvas>
+    <script>
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+    var colors = ["red", "blue", "green", "brown", "black"];
+    function drawSquare(x, y, size, color) {
+      context.fillStyle = color;
+      context.fillRect (x,y,size,size);
+    }
+
+    var squares = [[0, 0], [0, 1], [0, 3], [0, 6], [0, 10]];
+    var scaleFactor = 525/15;
+    function drawSquares(squares) {
+      for(var i = 0; i < squares.length; i++) {
+        var square = squares[i]
+        var size = i + 1;
+        var color = colors[i];
+        drawSquare(square[0]*scaleFactor, square[1]*scaleFactor, size*scaleFactor, color);
+      }
+    }
+
+    drawSquares(squares)
+    </script>
+  </body>
+</html>

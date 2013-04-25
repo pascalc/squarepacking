@@ -27,13 +27,20 @@
 (defn set-domain [[[x1 y1] [x2 y2]]]
   (fd/in x1 y1 x2 y2 (fd/interval 0 MAX-COORD)))
 
-(defn constrain-coords
-  [size [x1 y1] [x2 y2]]
-  (fd/eq 
-    (= (+ x1 size) x2)
-    (= (+ y1 size) y2)))
+(defne constrain-coords [size square]
+  ([s [[x1 y1] [x2 y2]]]
+    (fd/eq 
+      (= (+ x1 size) x2)
+      (= (+ y1 size) y2))))
 
-(defne not-overlapping-o
+(defne constrain-squares [size squares]
+  ([_ []])
+  ([s [sqr . sqrs]]
+    (constrain-coords s sqr)
+    (project [s]
+      (constrain-squares (inc s) sqrs))))
+
+(defne not-overlapping-squares-o
   [sq1 sq2]
   ([[[x11 y11] [x12 y12]]
     [[x21 y21] [x22 y22]]]
@@ -43,10 +50,25 @@
       [(fd/<= x22 x11)]
       [(fd/<= y22 y11)])))
 
+(defne not-overlapping-with-o
+  [square squares]
+  ([_ []])
+  ([sq1 [sq2 . sqrs]]
+    (not-overlapping-squares-o sq1 sq2)
+    (not-overlapping-with-o sq1 sqrs)))
+
+(defne pairwise-not-overlapping-o 
+  [squares]
+  ([[]])
+  ([[sq . sqrs]]
+    (not-overlapping-with-o sq sqrs)
+    (pairwise-not-overlapping-o sqrs)))
+
 (defn pack! []
   (let [squares (vec (repeatedly N make-square))]
     (run 1 [q]
       (everyg set-domain squares)
-      ;(constrain-coords squares)
+      (constrain-squares 1 squares)
+      (pairwise-not-overlapping-o squares)
       (== q squares))))
 
