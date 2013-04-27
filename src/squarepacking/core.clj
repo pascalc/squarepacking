@@ -75,7 +75,7 @@
     (fd/> y11 y21)
     (closest-square-acc sq [[x21 y21] [x22 y22]] sqrs)))
 
-(defne closest-square [closest squares]
+(defne closest-square-o [closest squares]
   ([ c [sq . sqrs] ] 
     (closest-square-acc c sq sqrs)))
 
@@ -90,35 +90,78 @@
     (fd/<= y11 y21)
     (farthest-square-acc sq [[x21 y21] [x22 y22]] sqrs)))
 
-(defne farthest-square [farthest squares]
+(defne farthest-square-o [farthest squares]
   ([ c [sq . sqrs] ] 
     (farthest-square-acc c sq sqrs)))
 
-(defne solution-size [size squares]
+(defne solution-size-o [size squares]
   ([s sqrs]
     (fresh [closest farthest 
             x11 y11 x22 y22 _1 _2]
-      (closest-square   [[x11 y11] _1] squares)
-      (farthest-square  [_2 [x22 y22]] squares)
+      (closest-square   [[x11 y11] _1] sqrs)
+      (farthest-square  [_2 [x22 y22]] sqrs)
       (project [x11 y11 x22 y22]
         (let [a (- y22 y11)
               b (- x22 x11)]
-          (== s (-> (+ (* a a) (* b b)) Math/sqrt int)))))))
+          (== s (-> (+ (* a a) (* b b)) Math/sqrt Math/ceil int)))))))
 
-(defn pack! []
+(defn pack []
   (let [squares (vec (repeatedly N make-square))]
     (run 1 [q]
       (everyg set-domain squares)
       (constrain-squares 1 squares)
       (pairwise-not-overlapping-o squares)
-      (fresh [closest farthest]
-        (closest-square closest squares)
-        (farthest-square farthest squares)
+      (fresh [closest farthest size]
+        (closest-square-o closest squares)
+        (farthest-square-o farthest squares)
+        (solution-size-o size squares)
         (== q {:squares   squares 
                :closest   closest
-               :farthest  farthest})))))
+               :farthest  farthest
+               :size      size})))))
+
+(defn solution-size []
+  (run 1 [q]
+    (solution-size-o q [[[0 0] [1 1]] [[1 1] [2 2]]])))
+
+(defn constrained-solution-size []
+  (run 1 [q] 
+    (fresh [size x11 y11 
+                 x12 y12 
+                 x21 y21 
+                 x22 y22 squares]
+      (fd/in x11 y11 x12 y12 x21 y21 x22 y22 (fd/interval 0 2))
+      (fd/eq 
+        (= x11 0) (= y11 0) (= x21 1) (= y21 1)
+        (= x12 (+ x11 1)) (= y12 (+ y11 1))
+        (= x22 (+ x21 1)) (= y22 (+ y21 1)))
+      (== squares [[[x11 y11] [x12 y12]] [[x21 y21] [x22 y22]]])
+      (solution-size-o size squares)
+      (== q {:squares squares :size size}))))
+
+(defn unconstrained-solution-size []
+  (run 1 [q] 
+    (fresh [size x11 y11 
+                 x12 y12 
+                 x21 y21 
+                 x22 y22 squares]
+      (fd/in x11 y11 x12 y12 x21 y21 x22 y22 (fd/interval 0 2))
+      (fd/eq 
+        (= x11 0) (= y11 0) (= x21 1) ;(= y21 1)
+        (= x12 (+ x11 1)) (= y12 (+ y11 1))
+        (= x22 (+ x21 1)) (= y22 (+ y21 1)))
+      (== squares [[[x11 y11] [x12 y12]] [[x21 y21] [x22 y22]]])
+      (solution-size-o size squares)
+      (== q {:squares squares :size size}))))
+
 
 ;; defne solution-size => (fd/eq "farthest" bottom-right - "closest" top-left)
 ;; (pack! better-than) sets constraint solution-size fd/< better-than => returns solution and solution-size
 ;; solution-size becomes next better-than
+
+;; Project not working example:
+; (run 1 [q] (fresh [x y z] (== x 0) (== y 1) (project [x y] (== z (+ x y)) (== z q))))
+; => (1)
+; (run 1 [q] (fresh [x y z] (fd/in x y (fd/interval 0 2)) (fd/eq (= y (+ x 1))) (project [x y] (== z (+ x y)) (== z q))))
+; => ClassCastException clojure.core.logic.LVar cannot be cast to java.lang.Number  clojure.lang.Numbers.add (Numbers.java:126)
 
