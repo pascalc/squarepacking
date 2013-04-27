@@ -64,11 +64,61 @@
     (not-overlapping-with-o sq sqrs)
     (pairwise-not-overlapping-o sqrs)))
 
+(defne closest-square-acc [closest acc squares]
+  ([ sq sq [] ])
+  ([ sq [[x11 y11] [x12 y12]] [[[x21 y21] [_ _]] . sqrs] ]
+    (fd/<= x11 x21)
+    (fd/<= y11 y21)
+    (closest-square-acc sq [[x11 y11] [x12 y12]] sqrs))
+  ([ sq [[x11 y11] [_ _]] [[[x21 y21] [x22 y22]] . sqrs] ]
+    (fd/> x11 x21)
+    (fd/> y11 y21)
+    (closest-square-acc sq [[x21 y21] [x22 y22]] sqrs)))
+
+(defne closest-square [closest squares]
+  ([ c [sq . sqrs] ] 
+    (closest-square-acc c sq sqrs)))
+
+(defne farthest-square-acc [farthest acc squares]
+  ([ sq sq [] ])
+  ([ sq [[x11 y11] [x12 y12]] [[[x21 y21] [_ _]] . sqrs] ]
+    (fd/> x11 x21)
+    (fd/> y11 y21)
+    (farthest-square-acc sq [[x11 y11] [x12 y12]] sqrs))
+  ([ sq [[x11 y11] [_ _]] [[[x21 y21] [x22 y22]] . sqrs] ]
+    (fd/<= x11 x21)
+    (fd/<= y11 y21)
+    (farthest-square-acc sq [[x21 y21] [x22 y22]] sqrs)))
+
+(defne farthest-square [farthest squares]
+  ([ c [sq . sqrs] ] 
+    (farthest-square-acc c sq sqrs)))
+
+(defne solution-size [size squares]
+  ([s sqrs]
+    (fresh [closest farthest 
+            x11 y11 x22 y22 _1 _2]
+      (closest-square   [[x11 y11] _1] squares)
+      (farthest-square  [_2 [x22 y22]] squares)
+      (project [x11 y11 x22 y22]
+        (let [a (- y22 y11)
+              b (- x22 x11)]
+          (== s (-> (+ (* a a) (* b b)) Math/sqrt int)))))))
+
 (defn pack! []
   (let [squares (vec (repeatedly N make-square))]
     (run 1 [q]
       (everyg set-domain squares)
       (constrain-squares 1 squares)
       (pairwise-not-overlapping-o squares)
-      (== q squares))))
+      (fresh [closest farthest]
+        (closest-square closest squares)
+        (farthest-square farthest squares)
+        (== q {:squares   squares 
+               :closest   closest
+               :farthest  farthest})))))
+
+;; defne solution-size => (fd/eq "farthest" bottom-right - "closest" top-left)
+;; (pack! better-than) sets constraint solution-size fd/< better-than => returns solution and solution-size
+;; solution-size becomes next better-than
 
